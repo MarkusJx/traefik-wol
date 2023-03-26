@@ -1,0 +1,30 @@
+entryPoints:
+  web:
+    address: ":80"
+    http:
+
+log:
+  level: DEBUG
+
+api:
+  dashboard: true
+  insecure: true
+
+experimental:
+  localPlugins:
+    wol:
+      moduleName: github.com/MarkusJx/traefik-wol
+      #version: v0.2.1
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: "traefik"
+    swarmmode: false
+    swarmModeRefreshSeconds: 15
+    watch: true
+  file:
+    filename: "/etc/config/traefik-config.yml"
+    watch: true
+  providersThrottleDuration: 10

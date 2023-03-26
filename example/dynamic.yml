@@ -1,0 +1,31 @@
+http:
+  routers:
+    server:
+      rule: PathPrefix(`/server`)
+      service: server-service
+      middlewares: 
+        - traefik-wol
+        - strip
+
+  services:
+    server-service:
+      loadBalancer:
+        servers:
+          - url: http://192.168.0.10:8009
+
+  middlewares:
+    traefik-wol:
+      plugin:
+        wol:
+          healthUrl: http://192.168.0.10:8009 # REQUIRED The URL to use for the health check
+          # REQUIRED The URL to use for the start request
+          # This is the URL of the "wake" service
+          startUrl: http://192.168.0.11:8081/wol/00:00:00:00:00:00
+          startMethod: POST # The method to use for the start request
+          numRetries: 5 # The number of retries
+          requestTimeout: 5 # The request timeout in seconds
+          stopTimeout: 5 # The number of minutes to wait before stopping the server
+          stopUrl: http://192.168.0.10:8009/sleep # The URL to use for the stop request
+    strip:
+      stripprefix:
+        prefixes: /server
