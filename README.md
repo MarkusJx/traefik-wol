@@ -18,7 +18,7 @@ http:
     traefik-wol:
       plugin:
         wol:
-          healthUrl: http://192.168.0.10:8009 # REQUIRED The URL to use for the health check
+          healthCheck: http://192.168.0.10:8009 # REQUIRED The URL to use for the health check
           macAddress: 00:00:00:00:00:00 # REQUIRED The MAC address of the machine to start
           ipAddress: 192.168.0.10 # REQUIRED The IP address of the machine to start
 ```
@@ -37,7 +37,7 @@ http:
     traefik-wol:
       plugin:
         wol:
-          healthUrl: http://192.168.0.10:8009 # REQUIRED The URL to use for the health check
+          healthCheck: http://192.168.0.10:8009 # REQUIRED The URL to use for the health check
           #REQUIRED The URL to use for the start request
           # This is the URL of the "wake" service
           startUrl: http://192.168.0.11:8081/wol/00:00:00:00:00:00
@@ -59,7 +59,7 @@ http:
     traefik-wol:
       plugin:
         wol:
-          healthUrl: http://192.168.0.10:8009 # REQUIRED The URL to use for the health check
+          healthCheck: http://192.168.0.10:8009 # REQUIRED The URL to use for the health check
           # REQUIRED The URL to use for the start request
           # This is the URL of the "wake" service
           startUrl: http://192.168.0.11:8081/wol/00:00:00:00:00:00

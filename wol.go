@@ -13,14 +13,14 @@ import (
 
 // Config the plugin configuration.
 type Config struct {
-	Mac                string `json:"macAddress,omitempty"`
-	Ip                 string `json:"ipAddress,omitempty"`
+	MacAddress         string `json:"macAddress,omitempty"`
+	IpAddress          string `json:"ipAddress,omitempty"`
 	StartUrl           string `json:"startUrl,omitempty"`
 	StartMethod        string `json:"startMethod,omitempty"`
 	StopUrl            string `json:"stopUrl,omitempty"`
 	StopMethod         string `json:"stopMethod,omitempty"`
 	StopTimeout        int    `json:"stopTimeout,omitempty"`
-	HealthCheck        string `json:"healthUrl,omitempty"`
+	HealthCheck        string `json:"healthCheck,omitempty"`
 	BroadcastInterface string `json:"broadcastInterface,omitempty"`
 	RequestTimeout     int    `json:"requestTimeout,omitempty"`
 	NumRetries         int    `json:"numRetries,omitempty"`
@@ -29,8 +29,8 @@ type Config struct {
 // CreateConfig creates the default plugin configuration.
 func CreateConfig() *Config {
 	return &Config{
-		Mac:                "",
-		Ip:                 "",
+		MacAddress:         "",
+		IpAddress:          "",
 		HealthCheck:        "",
 		StartUrl:           "",
 		StartMethod:        "GET",
@@ -46,8 +46,8 @@ func CreateConfig() *Config {
 // Wol a Demo plugin.
 type Wol struct {
 	next               http.Handler
-	mac                string
-	ip                 string
+	macAddress         string
+	ipAddress          string
 	startUrl           string
 	startMethod        string
 	stopUrl            string
@@ -69,15 +69,15 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 		return nil, fmt.Errorf("healthCheck cannot be empty")
 	}
 
-	if len(config.Mac) > 0 && len(config.Ip) == 0 || len(config.Mac) == 0 && len(config.Ip) > 0 {
+	if len(config.MacAddress) > 0 && len(config.IpAddress) == 0 || len(config.MacAddress) == 0 && len(config.IpAddress) > 0 {
 		return nil, fmt.Errorf("if mac or ip is set, the other must be set too")
 	}
 
-	if len(config.Mac) == 0 && len(config.Ip) == 0 && len(config.StartUrl) == 0 {
+	if len(config.MacAddress) == 0 && len(config.IpAddress) == 0 && len(config.StartUrl) == 0 {
 		return nil, fmt.Errorf("either mac and ip or startUrl must be set")
 	}
 
-	if len(config.StartUrl) > 0 && len(config.Mac) > 0 {
+	if len(config.StartUrl) > 0 && len(config.MacAddress) > 0 {
 		return nil, fmt.Errorf("cannot use mac and startUrl at the same time")
 	}
 
@@ -133,8 +133,8 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 
 	return &Wol{
 		healthCheck:        config.HealthCheck,
-		mac:                config.Mac,
-		ip:                 config.Ip,
+		macAddress:         config.MacAddress,
+		ipAddress:          config.IpAddress,
 		startUrl:           config.StartUrl,
 		startMethod:        config.StartMethod,
 		stopUrl:            config.StopUrl,
@@ -223,7 +223,7 @@ func (a *Wol) wakeUp() error {
 		return err
 	}
 
-	mp, err := wol.New(a.mac)
+	mp, err := wol.New(a.macAddress)
 	if err != nil {
 		return err
 	}
@@ -239,7 +239,7 @@ func (a *Wol) wakeUp() error {
 	}
 	defer conn.Close()
 
-	fmt.Printf("Attempting to send a magic packet to MAC %s\n", a.mac)
+	fmt.Printf("Attempting to send a magic packet to MAC %s\n", a.macAddress)
 	fmt.Printf("... Broadcasting to: %s\n", bcastAddr)
 	n, err := conn.Write(bs)
 	if err == nil && n != 102 {
