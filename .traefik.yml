@@ -7,6 +7,6 @@ import: github.com/MarkusJx/traefik-wol
 summary: 'Wake on LAN'
 
 testData:
-  macAddress: 00:00:00:00:00:00
-  ipAddress: 192.168.178.1
-  healthCheck: https://google.com
+  Mac: 00:00:00:00:00:00
+  Ip: 192.168.178.1
+  HealthCheck: https://google.com
