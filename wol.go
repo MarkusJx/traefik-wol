@@ -24,6 +24,7 @@ type Config struct {
 	BroadcastInterface string `json:"broadcastInterface,omitempty"`
 	RequestTimeout     int    `json:"requestTimeout,omitempty"`
 	NumRetries         int    `json:"numRetries,omitempty"`
+	BroadcastAddress   string `json:"ipAddress,omitempty"`
 }
 
 // CreateConfig creates the default plugin configuration.
@@ -40,6 +41,7 @@ func CreateConfig() *Config {
 		StopTimeout:        5,
 		RequestTimeout:     5,
 		NumRetries:         10,
+		BroadcastAddress:   "255.255.255.255",
 	}
 }
 
@@ -54,6 +56,7 @@ type Wol struct {
 	healthCheck        string
 	name               string
 	broadcastInterface string
+	broadcastAddress   string
 	stopMethod         string
 	stopTimeout        int
 	numRetries         int
@@ -141,6 +144,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 		next:               next,
 		name:               name,
 		broadcastInterface: config.BroadcastInterface,
+		broadcastAddress:   config.BroadcastAddress,
 		stopMethod:         config.StopMethod,
 		stopTimeout:        config.StopTimeout,
 		sleepTimer:         sleepTimer,
@@ -217,7 +221,7 @@ func (a *Wol) wakeUp() error {
 		}
 	}
 
-	bcastAddr := fmt.Sprintf("%s:%s", "255.255.255.255", "9")
+	bcastAddr := fmt.Sprintf("%s:%s", a.broadcastAddress, "9")
 	udpAddr, err := net.ResolveUDPAddr("udp", bcastAddr)
 	if err != nil {
 		return err
