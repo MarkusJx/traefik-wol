@@ -41,6 +41,18 @@ http:
           macAddress: 00:00:00:00:00:00 # REQUIRED The MAC address of the machine to start
           ipAddress: 192.168.0.1 # The network appliance replaying the magic packet
 ```
+Another example but with [WoL SDB](https://en.wikipedia.org/wiki/Wake-on-LAN#Subnet_directed_broadcasts):
+```yaml
+http:
+  middlewares:
+    traefik-wol:
+      plugin:
+        wol:
+          healthCheck: http://192.168.0.10:8009 # REQUIRED The URL to use for the health check
+          macAddress: 00:00:00:00:00:00 # REQUIRED The MAC address of the machine to start
+          ipAddress: 192.168.0.255 # The Broadcast address of the targeted network
+```
+
 
 ### Using an external wake-on-lan service
 In order to not have to run the plugin in `host` mode, or configuring a network appliance to replay your packets, you can use an external wake-on-lan service.
