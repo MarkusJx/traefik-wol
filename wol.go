@@ -3,12 +3,13 @@ package traefik_wol
 import (
 	"context"
 	"fmt"
-	"github.com/MarkusJx/traefik-wol/wol"
 	"net"
 	"net/http"
 	"sync"
 	"text/template"
 	"time"
+
+	"github.com/MarkusJx/traefik-wol/wol"
 )
 
 // Config the plugin configuration.
@@ -217,7 +218,12 @@ func (a *Wol) wakeUp() error {
 		}
 	}
 
-	bcastAddr := fmt.Sprintf("%s:%s", "255.255.255.255", "9")
+	targetIP := "255.255.255.255"
+	if len(a.ipAddress) > 0 {
+		targetIP = a.ipAddress
+	}
+
+	bcastAddr := fmt.Sprintf("%s:%s", targetIP, "9")
 	udpAddr, err := net.ResolveUDPAddr("udp", bcastAddr)
 	if err != nil {
 		return err
