@@ -3,12 +3,13 @@ package traefik_wol
 import (
 	"context"
 	"fmt"
-	"github.com/MarkusJx/traefik-wol/wol"
 	"net"
 	"net/http"
 	"sync"
 	"text/template"
 	"time"
+
+	"github.com/MarkusJx/traefik-wol/wol"
 )
 
 // Config the plugin configuration.
@@ -69,12 +70,8 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 		return nil, fmt.Errorf("healthCheck cannot be empty")
 	}
 
-	if len(config.MacAddress) > 0 && len(config.IpAddress) == 0 || len(config.MacAddress) == 0 && len(config.IpAddress) > 0 {
-		return nil, fmt.Errorf("if mac or ip is set, the other must be set too")
-	}
-
-	if len(config.MacAddress) == 0 && len(config.IpAddress) == 0 && len(config.StartUrl) == 0 {
-		return nil, fmt.Errorf("either mac and ip or startUrl must be set")
+	if len(config.MacAddress) == 0 && len(config.StartUrl) == 0 {
+		return nil, fmt.Errorf("either mac or startUrl must be set")
 	}
 
 	if len(config.StartUrl) > 0 && len(config.MacAddress) > 0 {
@@ -217,7 +214,12 @@ func (a *Wol) wakeUp() error {
 		}
 	}
 
-	bcastAddr := fmt.Sprintf("%s:%s", "255.255.255.255", "9")
+	targetIP := "255.255.255.255"
+	if len(a.ipAddress) > 0 {
+		targetIP = a.ipAddress
+	}
+
+	bcastAddr := fmt.Sprintf("%s:%s", targetIP, "9")
 	udpAddr, err := net.ResolveUDPAddr("udp", bcastAddr)
 	if err != nil {
 		return err
