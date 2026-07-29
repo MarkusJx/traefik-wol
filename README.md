@@ -15,8 +15,7 @@ The scheme selects how the check is performed:
 A scheme is always required, and layer 4 checks additionally require a port.
 
 ### Layer 4 (TCP) health checks
-Use a `tcp://` health check when the machine does not expose an HTTP endpoint, or when
-you would rather not wait for an application to finish starting up.
+Use a `tcp://` health check when the machine does not expose an HTTP endpoint.
 The check succeeds as soon as something accepts a TCP connection on the given port,
 so any listening service works, for example SSH, SMB, RDP or a database:
 
@@ -27,8 +26,7 @@ http:
       plugin:
         wol:
           # REQUIRED The address to use for the health check.
-          # Port 22 is the default SSH port, which is up on most machines as
-          # soon as they have finished booting.
+          # Port 22 is the default SSH port.
           healthCheck: tcp://192.168.0.10:22
           macAddress: 00:00:00:00:00:00 # REQUIRED The MAC address of the machine to start
           requestTimeout: 5 # The dial timeout in seconds
@@ -36,9 +34,6 @@ http:
 
 `tcp4://` and `tcp6://` force the connection to IPv4 or IPv6 respectively.
 IPv6 literals must be enclosed in brackets, e.g. `tcp6://[2001:db8::1]:22`.
-
-The `requestTimeout` option sets the dial timeout for layer 4 checks, just as it sets the
-request timeout for layer 7 checks.
 
 ## Operation modes
 ### Using the built-in wake-on-lan service with a braodcast
