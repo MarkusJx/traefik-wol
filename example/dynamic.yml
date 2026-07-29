@@ -17,7 +17,10 @@ http:
     traefik-wol:
       plugin:
         wol:
-          healthUrl: http://192.168.0.10:8009 # REQUIRED The URL to use for the health check
+          # REQUIRED The address to use for the health check.
+          # Use a http(s):// URL for a layer 7 check or a tcp:// address,
+          # e.g. tcp://192.168.0.10:8009, for a layer 4 check.
+          healthCheck: http://192.168.0.10:8009
           # REQUIRED The URL to use for the start request
           # This is the URL of the "wake" service
           startUrl: http://192.168.0.11:8081/wol/00:00:00:00:00:00

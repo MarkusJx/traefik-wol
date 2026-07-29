@@ -3,6 +3,40 @@
 Traefik plugin which starts a machine when a request is received using wake-on-lan.
 Based somewhat on [`go-wol`](https://github.com/sabhiram/go-wol).
 
+## Health checks
+The plugin uses the `healthCheck` value to decide whether the target machine is already awake.
+The scheme selects how the check is performed:
+
+| Scheme                   | Layer | Check                                                        |
+|--------------------------|-------|--------------------------------------------------------------|
+| `http://`, `https://`    | 7     | Sends a request to the URL, any response means the host is up |
+| `tcp://`, `tcp4://`, `tcp6://` | 4 | Opens a TCP connection to `host:port` and closes it again     |
+
+A scheme is always required, and layer 4 checks additionally require a port.
+
+### Layer 4 (TCP) health checks
+Use a `tcp://` health check when the machine does not expose an HTTP endpoint, or when
+you would rather not wait for an application to finish starting up.
+The check succeeds as soon as something accepts a TCP connection on the given port,
+so any listening service works, for example SSH, SMB, RDP or a database:
+
+```yaml
+http:
+  middlewares:
+    traefik-wol:
+      plugin:
+        wol:
+          healthCheck: tcp://192.168.0.10:22 # REQUIRED The address to use for the health check
+          macAddress: 00:00:00:00:00:00 # REQUIRED The MAC address of the machine to start
+          requestTimeout: 5 # The dial timeout in seconds
+```
+
+`tcp4://` and `tcp6://` force the connection to IPv4 or IPv6 respectively.
+IPv6 literals must be enclosed in brackets, e.g. `tcp6://[2001:db8::1]:22`.
+
+The `requestTimeout` option sets the dial timeout for layer 4 checks, just as it sets the
+request timeout for layer 7 checks.
+
 ## Operation modes
 ### Using the built-in wake-on-lan service with a braodcast
 

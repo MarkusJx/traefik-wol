@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"text/template"
 	"time"
@@ -44,6 +46,80 @@ func CreateConfig() *Config {
 	}
 }
 
+// healthChecker probes the target service to determine whether it is up.
+// It supports layer 7 (HTTP/HTTPS) and layer 4 (TCP) checks, selected by the
+// scheme of the configured healthCheck value.
+type healthChecker struct {
+	// raw is the health check as configured, kept for log output.
+	raw string
+	// network is the dial network for layer 4 checks ("tcp", "tcp4" or
+	// "tcp6"). It is empty for HTTP checks.
+	network string
+	// addr is the "host:port" to dial for layer 4 checks.
+	addr    string
+	client  *http.Client
+	timeout time.Duration
+}
+
+// newHealthChecker builds a checker from the configured healthCheck value.
+// A http:// or https:// URL performs a layer 7 check, a tcp://, tcp4:// or
+// tcp6:// URL performs a layer 4 check which only opens a connection to the
+// given host and port.
+func newHealthChecker(raw string, client *http.Client, timeout time.Duration) (*healthChecker, error) {
+	if !strings.Contains(raw, "://") {
+		return nil, fmt.Errorf(
+			"healthCheck %q must include a scheme, e.g. http://host:port or tcp://host:port", raw)
+	}
+
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return nil, fmt.Errorf("healthCheck %q is not a valid URL: %w", raw, err)
+	}
+
+	switch parsed.Scheme {
+	case "http", "https":
+		return &healthChecker{raw: raw, client: client, timeout: timeout}, nil
+	case "tcp", "tcp4", "tcp6":
+		if _, _, err := net.SplitHostPort(parsed.Host); err != nil {
+			return nil, fmt.Errorf(
+				"healthCheck %q must contain a host and a port, e.g. tcp://host:port", raw)
+		}
+
+		return &healthChecker{
+			raw:     raw,
+			network: parsed.Scheme,
+			addr:    parsed.Host,
+			client:  client,
+			timeout: timeout,
+		}, nil
+	default:
+		return nil, fmt.Errorf(
+			"unsupported healthCheck scheme %q, expected one of http, https, tcp, tcp4 or tcp6", parsed.Scheme)
+	}
+}
+
+// alive reports whether the target service currently accepts connections.
+func (h *healthChecker) alive() bool {
+	if len(h.network) == 0 {
+		_, err := h.client.Get(h.raw)
+		if err != nil {
+			fmt.Printf("Server is down: %s\n", err)
+			return false
+		}
+
+		return true
+	}
+
+	conn, err := net.DialTimeout(h.network, h.addr, h.timeout)
+	if err != nil {
+		fmt.Printf("Server is down: %s\n", err)
+		return false
+	}
+	defer conn.Close()
+
+	return true
+}
+
 // Wol a Demo plugin.
 type Wol struct {
 	next               http.Handler
@@ -52,7 +128,7 @@ type Wol struct {
 	startUrl           string
 	startMethod        string
 	stopUrl            string
-	healthCheck        string
+	healthCheck        *healthChecker
 	name               string
 	broadcastInterface string
 	stopMethod         string
@@ -98,20 +174,26 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 		return nil, fmt.Errorf("numRetries must be at least 1")
 	}
 
+	requestTimeout := time.Duration(config.RequestTimeout) * time.Second
 	client := &http.Client{
-		Timeout: time.Duration(config.RequestTimeout) * time.Second,
+		Timeout: requestTimeout,
+	}
+
+	healthCheck, err := newHealthChecker(config.HealthCheck, client, requestTimeout)
+	if err != nil {
+		return nil, err
 	}
 
 	var sleepTimer *time.Timer
 	if len(config.StopUrl) > 0 {
 		fmt.Println("Starting sleep timer")
 		sleepTimer = time.AfterFunc(time.Duration(config.StopTimeout)*time.Minute, func() {
-			_, err := client.Get(config.HealthCheck)
-			if err != nil {
+			if !healthCheck.alive() {
 				fmt.Println("Server is already stopped")
 				return
 			}
 
+			var err error
 			fmt.Printf("Attempting to stop server at %s\n", config.StopUrl)
 			switch config.StopMethod {
 			case "GET":
@@ -129,7 +211,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 	}
 
 	return &Wol{
-		healthCheck:        config.HealthCheck,
+		healthCheck:        healthCheck,
 		macAddress:         config.MacAddress,
 		ipAddress:          config.IpAddress,
 		startUrl:           config.StartUrl,
@@ -255,10 +337,8 @@ func (a *Wol) wakeUp() error {
 }
 
 func (a *Wol) serviceIsAlive() bool {
-	fmt.Println("Checking if server is up")
-	_, err := a.client.Get(a.healthCheck)
-	if err != nil {
-		fmt.Printf("Server is down: %s", err)
+	fmt.Printf("Checking if server is up at %s\n", a.healthCheck.raw)
+	if !a.healthCheck.alive() {
 		return false
 	}
 
