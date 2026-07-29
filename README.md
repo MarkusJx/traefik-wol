@@ -26,7 +26,10 @@ http:
     traefik-wol:
       plugin:
         wol:
-          healthCheck: tcp://192.168.0.10:22 # REQUIRED The address to use for the health check
+          # REQUIRED The address to use for the health check.
+          # Port 22 is the default SSH port, which is up on most machines as
+          # soon as they have finished booting.
+          healthCheck: tcp://192.168.0.10:22
           macAddress: 00:00:00:00:00:00 # REQUIRED The MAC address of the machine to start
           requestTimeout: 5 # The dial timeout in seconds
 ```

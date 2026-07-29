@@ -9,4 +9,6 @@ summary: 'Wake on LAN'
 testData:
   MacAddress: 00:00:00:00:00:00
   IpAddress: 192.168.178.1
-  HealthCheck: https://google.com
+  # A layer 4 check against port 22, the default SSH port, which is a
+  # convenient way to tell whether a machine is awake when it serves no HTTP.
+  HealthCheck: tcp://192.168.178.10:22
